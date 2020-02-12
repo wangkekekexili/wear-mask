@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Wear a Mask!</title>
+    <script src="./ccv.js"></script>
+    <script src="./cascade.js"></script>
+    <script>
+      const stackoverflow = new Image();
+      stackoverflow.src = "./stackoverflow.png";
+
+      const mask = new Image();
+      mask.src = "./mask.png";
+
+      document.addEventListener("DOMContentLoaded", function() {
+        const video = document.querySelector("video");
+        const canvas = document.querySelector("canvas");
+        const ctx = canvas.getContext("2d");
+
+        let lastDetected = null;
+
+        video.addEventListener("play", function() {
+          setInterval(function() {
+            ctx.drawImage(
+              video,
+              0,
+              0,
+              video.videoWidth,
+              video.videoHeight,
+              0,
+              0,
+              canvas.width,
+              canvas.height,
+            );
+
+            const detectedObjects = ccv.detect_objects({
+              canvas: ccv.pre(canvas),
+              cascade: cascade,
+              interval: 5,
+              min_neighbors: 1,
+            });
+
+            ctx.drawImage(stackoverflow, 0, 0, 50, 50);
+
+            if (detectedObjects.length > 0) {
+              const obj = detectedObjects[0];
+              ctx.drawImage(mask, obj.x, obj.y + 60, obj.width, obj.height);
+              lastDetected = {
+                x: obj.x,
+                y: obj.y + 60,
+                width: obj.width,
+                height: obj.height,
+              };
+            } else if (lastDetected !== null) {
+              ctx.drawImage(
+                mask,
+                lastDetected.x,
+                lastDetected.y,
+                lastDetected.width,
+                lastDetected.height,
+              );
+            }
+          }, 200);
+        });
+
+        navigator.mediaDevices
+          .getUserMedia({ video: true })
+          .then(stream => {
+            video.srcObject = stream;
+          })
+          .catch(err => console.log(err));
+      });
+    </script>
+    <style>
+      #wrapper {
+        display: flex;
+        justify-content: space-evenly;
+      }
+      video {
+        display: block;
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="wrapper">
+      <video autoplay="true" width="480" height="375" muted></video>
+      <canvas width="480" height="375"></canvas>
+    </div>
+  </body>
+</html>
